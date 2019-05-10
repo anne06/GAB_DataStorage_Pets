@@ -5,8 +5,6 @@ import android.provider.BaseColumns;
 public final class PetContract {
     private PetContract() {}
 
-    public static final String DB_NAME = "shelter.db";
-
     public final class PetEntry implements BaseColumns {
 
         // Table

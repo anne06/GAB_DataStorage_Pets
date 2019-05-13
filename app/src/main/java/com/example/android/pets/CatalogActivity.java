@@ -15,6 +15,7 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -25,6 +26,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.android.pets.data.PetDbHelper;
 import com.example.android.pets.data.PetContract.PetEntry;
@@ -34,6 +36,7 @@ import com.example.android.pets.data.PetContract.PetEntry;
  * Displays list of pets that were entered and stored in the app.
  */
 public class CatalogActivity extends AppCompatActivity {
+    private PetDbHelper mDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +53,9 @@ public class CatalogActivity extends AppCompatActivity {
             }
         });
 
+        // To access our database, we instantiate our subclass of SQLiteOpenHelper
+        // and pass the context, which is the current activity.
+        mDbHelper = new PetDbHelper(this);
         displayDatabaseInfo();
     }
 
@@ -67,7 +73,8 @@ public class CatalogActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             // Respond to a click on the "Insert dummy data" menu option
             case R.id.action_insert_dummy_data:
-                // Do nothing for now
+                insertPet();
+                displayDatabaseInfo();
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
@@ -78,13 +85,39 @@ public class CatalogActivity extends AppCompatActivity {
     }
 
     /**
+     * InsertPet
+     *
+     * return: id or -1 (error)
+     */
+    private long insertPet(){
+        // The connection with the db
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+
+        // Use of a Content Values to insert data in the DB
+        // Creation of all key-values for a pet
+        ContentValues insertDummyValues = new ContentValues();
+        insertDummyValues.put(PetEntry.COLUMN_PET_NAME, "Toto");
+        insertDummyValues.put(PetEntry.COLUMN_PET_BREED, "Terrier");
+        insertDummyValues.put(PetEntry.COLUMN_PET_GENDER, PetEntry.GENDER_MALE);
+        insertDummyValues.put(PetEntry.COLUMN_PET_WEIGHT, 7);
+
+        Long creation = db.insert(PetEntry.TABLE_NAME, null, insertDummyValues);
+
+        if (creation == -1){
+            Toast.makeText(this, R.string.error_insert, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this,
+                    getString(R.string.ID_pet_inserted) + creation.toString(),
+                    Toast.LENGTH_SHORT).show();
+        }
+        return creation;
+    }
+
+    /**
      * Temporary helper method to display information in the onscreen TextView about the state of
      * the pets database.
      */
     private void displayDatabaseInfo() {
-        // To access our database, we instantiate our subclass of SQLiteOpenHelper
-        // and pass the context, which is the current activity.
-        PetDbHelper mDbHelper = new PetDbHelper(this);
 
         // Create and/or open a database to read from it
         SQLiteDatabase db = mDbHelper.getReadableDatabase();
@@ -105,3 +138,4 @@ public class CatalogActivity extends AppCompatActivity {
     }
 
 }
+

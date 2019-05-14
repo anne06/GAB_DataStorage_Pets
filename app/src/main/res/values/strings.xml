@@ -11,8 +11,8 @@
      limitations under the License.
 -->
 <resources>
-    <string name="error_insert">An error occured</string>
-    <string name="ID_pet_inserted">A new pet is inserted with ID: </string>
+    <string name="error_insert">Error with saving pet</string>
+    <string name="ID_pet_inserted">Pet saved with ID: </string>
 
     <!-- Name for the application [CHAR LIMIT=12] -->
     <string name="app_name">Pets</string>

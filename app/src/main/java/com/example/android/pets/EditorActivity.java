@@ -15,10 +15,13 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -26,23 +29,35 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.Toast;
+
 import com.example.android.pets.data.PetContract.PetEntry;
+import com.example.android.pets.data.PetDbHelper;
 
 /**
  * Allows user to create a new pet or edit an existing one.
  */
 public class EditorActivity extends AppCompatActivity {
+    private static final String LOG_TAG = EditorActivity.class.getSimpleName();
 
-    /** EditText field to enter the pet's name */
+    /**
+     * EditText field to enter the pet's name
+     */
     private EditText mNameEditText;
 
-    /** EditText field to enter the pet's breed */
+    /**
+     * EditText field to enter the pet's breed
+     */
     private EditText mBreedEditText;
 
-    /** EditText field to enter the pet's weight */
+    /**
+     * EditText field to enter the pet's weight
+     */
     private EditText mWeightEditText;
 
-    /** EditText field to enter the pet's gender */
+    /**
+     * EditText field to enter the pet's gender
+     */
     private Spinner mGenderSpinner;
 
     /**
@@ -52,6 +67,8 @@ public class EditorActivity extends AppCompatActivity {
      * PetContract.PetEntry.GENDER_FEMALE for female.
      */
     private int mGender = PetEntry.GENDER_UNKNOWN;
+
+    private PetDbHelper mDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +82,8 @@ public class EditorActivity extends AppCompatActivity {
         mGenderSpinner = (Spinner) findViewById(R.id.spinner_gender);
 
         setupSpinner();
+
+        mDbHelper = new PetDbHelper(this);
     }
 
     /**
@@ -120,7 +139,11 @@ public class EditorActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             // Respond to a click on the "Save" menu option
             case R.id.action_save:
-                // Do nothing for now
+                insertPet();
+
+                // Don't forget it !!!
+                // Means that we return to the Catalog Activity
+                finish();
                 return true;
             // Respond to a click on the "Delete" menu option
             case R.id.action_delete:
@@ -133,5 +156,56 @@ public class EditorActivity extends AppCompatActivity {
                 return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void insertPet() {
+        boolean anError = false;
+
+        String petName = ((EditText) findViewById(R.id.edit_pet_name)).getText().toString();
+        String petBreed = ((EditText) findViewById(R.id.edit_pet_breed)).getText().toString();
+
+        if (petName == null || petName.trim().length() == 0) {
+            anError = true;
+        }
+
+        if (petBreed == null) {
+            petBreed = "";
+        }
+
+        String petWeightString = ((EditText) findViewById(R.id.edit_pet_weight)).getText().toString();
+        int petWeight = 0;
+
+        if (petWeightString == null || petWeightString.trim().length() == 0) {
+            petWeight = 0;
+        } else {
+            try {
+                petWeight = Integer.parseInt(petWeightString);
+            } catch (NumberFormatException nfe) {
+                Log.e(LOG_TAG, "Catch Pet weight");
+                anError = true;
+            }
+        }
+
+        if (anError) {
+            Toast.makeText(this, R.string.error_insert, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ContentValues values = new ContentValues();
+        values.put(PetEntry.COLUMN_PET_NAME, petName.trim());
+        values.put(PetEntry.COLUMN_PET_BREED, petBreed.trim());
+        values.put(PetEntry.COLUMN_PET_GENDER, mGender);
+        values.put(PetEntry.COLUMN_PET_WEIGHT, petWeight);
+
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+        Long petId = db.insert(PetEntry.TABLE_NAME, null, values);
+        if (petId == -1) {
+            Toast.makeText(this, R.string.error_insert, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this,
+                    getString(R.string.ID_pet_inserted) + petId.toString(),
+                    Toast.LENGTH_SHORT).show();
+        }
+
     }
 }

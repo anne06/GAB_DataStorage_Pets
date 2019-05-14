@@ -39,6 +39,12 @@ public class CatalogActivity extends AppCompatActivity {
     private PetDbHelper mDbHelper;
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        displayDatabaseInfo();
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_catalog);
@@ -56,7 +62,8 @@ public class CatalogActivity extends AppCompatActivity {
         // To access our database, we instantiate our subclass of SQLiteOpenHelper
         // and pass the context, which is the current activity.
         mDbHelper = new PetDbHelper(this);
-        displayDatabaseInfo();
+        // Called after, in the onStart() method
+        // displayDatabaseInfo();
     }
 
     @Override

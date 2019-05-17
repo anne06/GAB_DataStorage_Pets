@@ -129,9 +129,6 @@ public class CatalogActivity extends AppCompatActivity {
         // pets table in the database).
         TextView allValues = (TextView) findViewById(R.id.text_view_pet);
 
-        // Create and/or open a database to read from it
-        SQLiteDatabase db = mDbHelper.getReadableDatabase();
-
         // Define the projection
         String[] projection = {
                 PetEntry._ID,
@@ -141,12 +138,9 @@ public class CatalogActivity extends AppCompatActivity {
                 PetEntry.COLUMN_PET_WEIGHT
         };
 
-        // Perform a SQL query
-        // to get a Cursor that contains all rows from the pets table.
-        Cursor cursor = db.query(PetEntry.TABLE_NAME,
+        // Execute the query by using the ContentResolver - ContentProvider and UriMatcher
+        Cursor cursor = (Cursor) getContentResolver().query(PetEntry.CONTENT_URI,
                 projection,
-                null,
-                null,
                 null,
                 null,
                 null);

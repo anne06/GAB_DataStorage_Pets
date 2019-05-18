@@ -159,20 +159,11 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void insertPet() {
-        boolean anError = false;
 
         String petName = ((EditText) findViewById(R.id.edit_pet_name)).getText().toString();
         String petBreed = ((EditText) findViewById(R.id.edit_pet_breed)).getText().toString();
-
-        if (petName == null || petName.trim().length() == 0) {
-            anError = true;
-        }
-
-        if (petBreed == null) {
-            petBreed = "";
-        }
-
         String petWeightString = ((EditText) findViewById(R.id.edit_pet_weight)).getText().toString();
+
         int petWeight = 0;
 
         if (petWeightString == null || petWeightString.trim().length() == 0) {
@@ -182,18 +173,14 @@ public class EditorActivity extends AppCompatActivity {
                 petWeight = Integer.parseInt(petWeightString);
             } catch (NumberFormatException nfe) {
                 Log.e(LOG_TAG, "Catch Pet weight");
-                anError = true;
+                Toast.makeText(this, R.string.error_insert, Toast.LENGTH_SHORT).show();
+                return;
             }
         }
 
-        if (anError) {
-            Toast.makeText(this, R.string.error_insert, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         ContentValues values = new ContentValues();
-        values.put(PetEntry.COLUMN_PET_NAME, petName.trim());
-        values.put(PetEntry.COLUMN_PET_BREED, petBreed.trim());
+        values.put(PetEntry.COLUMN_PET_NAME, petName);
+        values.put(PetEntry.COLUMN_PET_BREED, petBreed);
         values.put(PetEntry.COLUMN_PET_GENDER, mGender);
         values.put(PetEntry.COLUMN_PET_WEIGHT, petWeight);
 

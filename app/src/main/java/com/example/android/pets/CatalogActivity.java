@@ -15,10 +15,11 @@
  */
 package com.example.android.pets;
 
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
@@ -28,8 +29,8 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.android.pets.data.PetDbHelper;
 import com.example.android.pets.data.PetContract.PetEntry;
+import com.example.android.pets.data.PetDbHelper;
 
 
 /**
@@ -97,9 +98,6 @@ public class CatalogActivity extends AppCompatActivity {
      * return: id or -1 (error)
      */
     private long insertPet(){
-        // The connection with the db
-        SQLiteDatabase db = mDbHelper.getWritableDatabase();
-
         // Use of a Content Values to insert data in the DB
         // Creation of all key-values for a pet
         ContentValues insertDummyValues = new ContentValues();
@@ -108,16 +106,20 @@ public class CatalogActivity extends AppCompatActivity {
         insertDummyValues.put(PetEntry.COLUMN_PET_GENDER, PetEntry.GENDER_MALE);
         insertDummyValues.put(PetEntry.COLUMN_PET_WEIGHT, 7);
 
-        Long creation = db.insert(PetEntry.TABLE_NAME, null, insertDummyValues);
+        // Use a ContentResolver + ContentProvider + UriMatcher to insert a new pet
+        Uri newPetID = getContentResolver().insert(PetEntry.CONTENT_URI, insertDummyValues);
 
-        if (creation == -1){
-            Toast.makeText(this, R.string.error_insert, Toast.LENGTH_SHORT).show();
+        if (newPetID == null) {
+            Toast.makeText(this,
+                    getString(R.string.error_insert),
+                    Toast.LENGTH_SHORT).show();
         } else {
             Toast.makeText(this,
-                    getString(R.string.ID_pet_inserted) + creation.toString(),
+                    getString(R.string.ID_pet_inserted),
                     Toast.LENGTH_SHORT).show();
         }
-        return creation;
+
+        return ContentUris.parseId(newPetID);
     }
 
     /**
@@ -153,7 +155,7 @@ public class CatalogActivity extends AppCompatActivity {
 
         try {
 
-            allValues.append("Number of rows in pets database table: " + cursor.getCount());
+            allValues.setText("Number of rows in pets database table: " + cursor.getCount());
             allValues.append("\n\n_id - name - breed - gender - weight\n");
 
             while(cursor.moveToNext()){

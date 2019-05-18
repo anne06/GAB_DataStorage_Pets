@@ -16,7 +16,7 @@
 package com.example.android.pets;
 
 import android.content.ContentValues;
-import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
@@ -197,13 +197,17 @@ public class EditorActivity extends AppCompatActivity {
         values.put(PetEntry.COLUMN_PET_GENDER, mGender);
         values.put(PetEntry.COLUMN_PET_WEIGHT, petWeight);
 
-        SQLiteDatabase db = mDbHelper.getWritableDatabase();
-        Long petId = db.insert(PetEntry.TABLE_NAME, null, values);
-        if (petId == -1) {
-            Toast.makeText(this, R.string.error_insert, Toast.LENGTH_SHORT).show();
+        // Use of a Content Values to insert data in the DB
+        // Creation of all key-values for a pet
+        Uri uriPetId = getContentResolver().insert(PetEntry.CONTENT_URI, values);
+
+        if (uriPetId == null) {
+            Toast.makeText(this,
+                    getString(R.string.error_insert),
+                    Toast.LENGTH_SHORT).show();
         } else {
             Toast.makeText(this,
-                    getString(R.string.ID_pet_inserted) + petId.toString(),
+                    getString(R.string.ID_pet_inserted),
                     Toast.LENGTH_SHORT).show();
         }
 

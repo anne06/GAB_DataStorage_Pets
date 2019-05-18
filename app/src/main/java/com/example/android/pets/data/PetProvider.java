@@ -11,6 +11,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.example.android.pets.R;
+
 public class PetProvider extends ContentProvider {
     public static final String LOG_TAG = PetProvider.class.getSimpleName();
     private PetDbHelper mDbHelper;
@@ -86,7 +88,29 @@ public class PetProvider extends ContentProvider {
     @Nullable
     @Override
     public Uri insert(@NonNull Uri uri, @Nullable ContentValues contentValues) {
-        return null;
+
+        switch (sUriMatcher.match(uri)) {
+            case URI_MATCHER_PETS :
+                // INSERT a pet
+                return insertPet(uri, contentValues);
+
+           default:
+                // There is no PATTERN match
+                Log.e(LOG_TAG, "There is no pattern match");
+                throw new IllegalArgumentException("Cannot query unknown URI " + uri);
+        }
+
+    }
+
+    private Uri insertPet(@NonNull Uri uri, @Nullable ContentValues contentValues) {
+        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+        long id = db.insert(PetContract.PetEntry.TABLE_NAME, null, contentValues);
+        if (id == -1){
+            Log.e(LOG_TAG, R.string.error_insert + " - " + uri);
+            return null;
+        }
+        return ContentUris.withAppendedId(uri, id);
     }
 
     @Override

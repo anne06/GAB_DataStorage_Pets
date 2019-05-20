@@ -11,6 +11,8 @@
      limitations under the License.
 -->
 <resources>
+    <string name="Uri_error">Unknown URI</string>
+    <string name="error_update">Error with pet modification</string>
     <string name="error_insert">Error with saving pet</string>
     <string name="ID_pet_inserted">Pet saved.</string>
 

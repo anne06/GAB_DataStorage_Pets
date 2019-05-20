@@ -36,6 +36,17 @@ public class PetProvider extends ContentProvider {
         return true;
     }
 
+    /**
+     * **************** QUERY
+     *
+     * @param uri
+     * @param projections
+     * @param selection
+     * @param selectionArgs
+     * @param sortOrder
+     * @return
+     */
+
     @Nullable
     @Override
     public Cursor query(@NonNull Uri uri, @Nullable String[] projections, @Nullable String selection,
@@ -74,7 +85,8 @@ public class PetProvider extends ContentProvider {
             default:
                 // There is no PATTERN match
                 Log.e(LOG_TAG, "There is no pattern match");
-                throw new IllegalArgumentException("Cannot query unknown URI " + uri);
+
+                throw new IllegalArgumentException((getContext().getString(R.string.Uri_error)) + uri);
         }
 
 
@@ -87,6 +99,13 @@ public class PetProvider extends ContentProvider {
         return null;
     }
 
+    /**
+     * ***************** INSERT
+     *
+     * @param uri
+     * @param contentValues
+     * @return
+     */
     @Nullable
     @Override
     public Uri insert(@NonNull Uri uri, @Nullable ContentValues contentValues) {
@@ -99,7 +118,7 @@ public class PetProvider extends ContentProvider {
            default:
                 // There is no PATTERN match
                 Log.e(LOG_TAG, "There is no pattern match");
-                throw new IllegalArgumentException("Cannot query unknown URI " + uri);
+               throw new IllegalArgumentException((getContext().getString(R.string.Uri_error)) + uri);
         }
 
     }
@@ -115,9 +134,10 @@ public class PetProvider extends ContentProvider {
         contentValues = formatValues(contentValues);
 
         // Get a SQLiteDatabase object
-        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
         long id = db.insert(PetContract.PetEntry.TABLE_NAME, null, contentValues);
+
         if (id == -1){
             Log.e(LOG_TAG, R.string.error_insert + " - " + uri);
             return null;
@@ -125,24 +145,93 @@ public class PetProvider extends ContentProvider {
         return ContentUris.withAppendedId(uri, id);
     }
 
+    /**
+     * ***************  UPDATE
+     *
+     * @param uri
+     * @param contentValues
+     * @param selection
+     * @param selectionArgs
+     * @return
+     */
     @Override
-    public int delete(@NonNull Uri uri, @Nullable String s, @Nullable String[] strings) {
-        return 0;
-    }
+    public int update(@NonNull Uri uri,
+                      @Nullable ContentValues contentValues,
+                      @Nullable String selection,
+                      @Nullable String[] selectionArgs) {
 
-    @Override
-    public int update(@NonNull Uri uri, @Nullable ContentValues contentValues, @Nullable String s, @Nullable String[] strings) {
+        final int match = sUriMatcher.match(uri);
+        switch (match) {
+            case URI_MATCHER_PETS:
+                return updatePet(uri, contentValues, selection, selectionArgs);
+            case URI_MATCHER_PET_ID:
+                // For the PET_ID code, extract out the ID from the URI,
+                // so we know which row to update. Selection will be "_id=?" and selection
+                // arguments will be a String array containing the actual ID.
+                selection = PetEntry._ID + "=?";
+                selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
+                return updatePet(uri, contentValues, selection, selectionArgs);
+            default:
+                throw new IllegalArgumentException((getContext().getString(R.string.Uri_error)) + uri);
+        }
+    }
+    private int updatePet(@NonNull Uri uri,
+                          @Nullable ContentValues contentValues,
+                          @Nullable String selection,
+                          @Nullable String[] selectionArgs){
+
+        // If there are no values to update, then don't try to update the database
+        if (contentValues.size() == 0) {
+            Log.e(LOG_TAG, "The UPDATE contentValues is empty");
+            return 0;
+        }
+
         // Test the values before enter them in the db
         if (!isAllValid(contentValues)) {
-            Log.e(LOG_TAG, R.string.error_insert + " - " + uri);
+            Log.e(LOG_TAG, R.string.error_update + " - " + uri);
             return 0;
         }
 
         // Format the values
         contentValues = formatValues(contentValues);
 
-        // TODO implement this feature
-        return 0;
+        // Get a SQLiteDatabase object
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+
+        long id = db.update(PetContract.PetEntry.TABLE_NAME, contentValues, selection, selectionArgs);
+
+        if (id == -1){
+            Log.e(LOG_TAG, R.string.error_update + " - " + uri);
+        }
+        return (int) id;
+    }
+
+    /**
+     * ********************* DELETE
+     *
+     * @param uri
+     * @param selection
+     * @param selectionArgs
+     * @return
+     */
+    @Override
+    public int delete(Uri uri, String selection, String[] selectionArgs) {
+        // Get writeable database
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+
+        final int match = sUriMatcher.match(uri);
+        switch (match) {
+            case URI_MATCHER_PETS:
+                // Delete all rows that match the selection and selection args
+                return db.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+            case URI_MATCHER_PET_ID:
+                // Delete a single row given by the ID in the URI
+                selection = PetEntry._ID + "=?";
+                selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};
+                return db.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
+            default:
+                throw new IllegalArgumentException((getContext().getString(R.string.Uri_error)) + uri);
+        }
     }
 
     private boolean isValidName(String name){

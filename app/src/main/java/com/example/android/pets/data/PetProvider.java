@@ -93,12 +93,6 @@ public class PetProvider extends ContentProvider {
         return queryCusror;
     }
 
-    @Nullable
-    @Override
-    public String getType(@NonNull Uri uri) {
-        return null;
-    }
-
     /**
      * ***************** INSERT
      *
@@ -234,6 +228,30 @@ public class PetProvider extends ContentProvider {
         }
     }
 
+    /**
+     * ****************** RETURN THE MIME TYPE
+     * @param uri
+     * @return
+     */
+    @Nullable
+    @Override
+    public String getType(@NonNull Uri uri) {
+        final int match = sUriMatcher.match(uri);
+        switch (match) {
+            case URI_MATCHER_PETS:
+                return PetEntry.CONTENT_LIST_TYPE;
+            case URI_MATCHER_PET_ID:
+                return PetEntry.CONTENT_ITEM_TYPE;
+            default:
+                throw new IllegalStateException("Unknown URI " + uri + " with match " + match);
+        }
+    }
+
+    /* ********************************************
+
+               Helper methods
+
+    ********************************************** */
     private boolean isValidName(String name){
         if (name == null)
             return false;
@@ -294,4 +312,5 @@ public class PetProvider extends ContentProvider {
 
         return aPet;
     }
+
 }

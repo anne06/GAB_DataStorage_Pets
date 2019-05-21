@@ -11,6 +11,12 @@
      limitations under the License.
 -->
 <resources>
+    <!-- Title text for the empty view, which describes the empty dog house image [CHAR LIMIT=50] -->
+    <string name="empty_view_title_text">It\'s a bit lonely here...</string>
+    <!-- Subtitle text for the empty view that prompts the user to add a pet [CHAR LIMIT=50] -->
+    <string name="empty_view_subtitle_text">Get started by adding a pet</string>
+
+
     <string name="Uri_error">Unknown URI</string>
     <string name="error_update">Error with pet modification</string>
     <string name="error_insert">Error with saving pet</string>

@@ -90,6 +90,12 @@ public class PetProvider extends ContentProvider {
         }
 
 
+        // Set notification URI on the Cursor,
+        // so we know what content URI the Cursor was created for.
+        // If the data at this URI changes, then we know we need to update the Cursor.
+        queryCusror.setNotificationUri(getContext().getContentResolver(), uri);
+
+
         return queryCusror;
     }
 
@@ -136,6 +142,11 @@ public class PetProvider extends ContentProvider {
             Log.e(LOG_TAG, R.string.error_insert + " - " + uri);
             return null;
         }
+
+        // Notify all listeners that the data has changed for the pet content URI
+        getContext().getContentResolver().notifyChange(uri, null);
+
+        // Return the new URI with the ID (of the newly inserted row) appended at the end
         return ContentUris.withAppendedId(uri, id);
     }
 
@@ -192,12 +203,17 @@ public class PetProvider extends ContentProvider {
         // Get a SQLiteDatabase object
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
-        long id = db.update(PetContract.PetEntry.TABLE_NAME, contentValues, selection, selectionArgs);
+        int rowsUpdated = db.update(PetContract.PetEntry.TABLE_NAME, contentValues, selection, selectionArgs);
 
-        if (id == -1){
+        if (rowsUpdated <= 0){
             Log.e(LOG_TAG, R.string.error_update + " - " + uri);
         }
-        return (int) id;
+        else {
+            // Notify all the loaders associated to this URI that the data changes
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
+
+        return rowsUpdated;
     }
 
     /**
@@ -216,9 +232,15 @@ public class PetProvider extends ContentProvider {
         final int match = sUriMatcher.match(uri);
         switch (match) {
             case URI_MATCHER_PETS:
+                // Notify all the loaders associated to this URI that the data changes
+                getContext().getContentResolver().notifyChange(uri, null);
+
                 // Delete all rows that match the selection and selection args
                 return db.delete(PetEntry.TABLE_NAME, selection, selectionArgs);
             case URI_MATCHER_PET_ID:
+                // Notify all the loaders associated to this URI that the data changes
+                getContext().getContentResolver().notifyChange(uri, null);
+
                 // Delete a single row given by the ID in the URI
                 selection = PetEntry._ID + "=?";
                 selectionArgs = new String[]{String.valueOf(ContentUris.parseId(uri))};

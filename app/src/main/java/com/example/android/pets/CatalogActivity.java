@@ -137,9 +137,11 @@ public class CatalogActivity
     }
 
     /***************************************
+     *
      * InsertPet
      * <p>
      * return: id or -1 (error)
+     *
      ****************************************/
     private long insertPet() {
         // Use of a Content Values to insert data in the DB
@@ -173,7 +175,6 @@ public class CatalogActivity
      *********************************************/
     private void deleteAllPets() {
 
-
         int nbPetDeleted = getContentResolver().delete(PetEntry.CONTENT_URI, null, null);
         if (nbPetDeleted > 0) {
             Toast.makeText(this,
@@ -184,8 +185,6 @@ public class CatalogActivity
                     getString(R.string.catalog_delete_pet_failed),
                     Toast.LENGTH_SHORT).show();
         }
-
-
     }
 
     /*************************************************************************************

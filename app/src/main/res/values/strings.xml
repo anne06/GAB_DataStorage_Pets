@@ -11,6 +11,9 @@
      limitations under the License.
 -->
 <resources>
+
+    <string name="unknown_breed">Unknown breed</string>
+
     <!-- Toast message in editor when current pet was successfully deleted [CHAR LIMIT=NONE] -->
     <string name="catalog_delete_pets_successful">All the Pets are deleted</string>
 

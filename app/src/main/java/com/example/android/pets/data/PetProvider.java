@@ -9,6 +9,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.example.android.pets.data.PetContract.PetEntry;
@@ -276,12 +277,7 @@ public class PetProvider extends ContentProvider {
 
     ********************************************** */
     private boolean isValidName(String name){
-        if (name == null)
-            return false;
-
-        if (name.trim().equals(""))
-            return false;
-        return true;
+        return !TextUtils.isEmpty(name);
     }
 
     private boolean isValidBreed(String breed){

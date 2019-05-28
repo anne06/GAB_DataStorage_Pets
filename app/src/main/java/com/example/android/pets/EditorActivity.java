@@ -17,7 +17,6 @@ package com.example.android.pets;
 
 import android.app.AlertDialog;
 import android.app.LoaderManager;
-import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.CursorLoader;
 import android.content.DialogInterface;
@@ -131,10 +130,9 @@ public class EditorActivity
         Intent intent = getIntent();
         Bundle bd = intent.getExtras();
 
-        if(bd != null)
-        {
+        if (bd != null) {
             String getType = (String) bd.get("type");
-            if (getType.equalsIgnoreCase(CatalogActivity.EDITOR_EDIT_MODE)){
+            if (getType.equalsIgnoreCase(CatalogActivity.EDITOR_EDIT_MODE)) {
                 // EDITOR MODE
                 isEdit = true;
                 this.setTitle(R.string.editor_activity_title_edit_pet);
@@ -161,7 +159,9 @@ public class EditorActivity
     }
 
     /********************************************
+     *
      * INSERT or UPDATE a PET
+     *
      *********************************************/
     private void savePet() {
 
@@ -189,10 +189,8 @@ public class EditorActivity
         values.put(PetEntry.COLUMN_PET_GENDER, mGender);
         values.put(PetEntry.COLUMN_PET_WEIGHT, petWeight);
 
-        if (isEdit){
+        if (isEdit) {
             // We are in UPDATE mode
-            long petID = ContentUris.parseId(mCurrentPetUri);
-
             int nbPetUpdated = getContentResolver().update(mCurrentPetUri, values, null, null);
 
             if (nbPetUpdated == 1) {
@@ -224,9 +222,36 @@ public class EditorActivity
 
     }
 
+    /********************************************
+     *
+     * DELETE a PET
+     *
+     *********************************************/
+    private void deletePet() {
+        if (!isEdit) {
+            // We are in INSERT mode, the PET does not already exists
+            return;
+        }
+
+        int nbPetDeleted = getContentResolver().delete(mCurrentPetUri, null, null);
+        if (nbPetDeleted == 1) {
+            Toast.makeText(this,
+                    getString(R.string.editor_delete_pet_successful),
+                    Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this,
+                    getString(R.string.editor_delete_pet_failed),
+                    Toast.LENGTH_SHORT).show();
+        }
+
+        // Close the activity
+        finish();
+
+    }
+
     /********************************************************
      *
-     * Display a Dialog if we live without saving data
+     * Dialog if we live without saving data
      *
      *********************************************************/
     private void showUnsavedChangesDialog(
@@ -275,7 +300,36 @@ public class EditorActivity
         showUnsavedChangesDialog(discardButtonClickListener);
     }
 
+    /*************************************************************************************
+     *
+     *  Dialog if the DELETE menu item is selected
+     *
+     **************************************************************************************/
+    private void showDeleteConfirmationDialog() {
+        // Create an AlertDialog.Builder and set the message, and click listeners
+        // for the postivie and negative buttons on the dialog.
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(R.string.delete_dialog_msg);
+        builder.setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User clicked the "Delete" button, so delete the pet.
+                deletePet();
+            }
+        });
+        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User clicked the "Cancel" button, so dismiss the dialog
+                // and continue editing the pet.
+                if (dialog != null) {
+                    dialog.dismiss();
+                }
+            }
+        });
 
+        // Create and show the AlertDialog
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+    }
 
 
     /***************************************************************************************
@@ -283,7 +337,7 @@ public class EditorActivity
      * SPINNER
      * Setup the dropdown spinner that allows the user to select the gender of the pet.
      *
-    ****************************************************************************************/
+     ****************************************************************************************/
     private void setupSpinner() {
         // Create adapter for spinner. The list options are from the String array it will use
         // the spinner will use the default layout
@@ -356,10 +410,12 @@ public class EditorActivity
                 // Means that we return to the Catalog Activity
                 finish();
                 return true;
+
             // Respond to a click on the "Delete" menu option
             case R.id.action_delete:
-                // Do nothing for now
+                showDeleteConfirmationDialog();
                 return true;
+
             // Respond to a click on the "Up" arrow button in the app bar
             case android.R.id.home:
                 // Navigate back to parent activity (CatalogActivity)

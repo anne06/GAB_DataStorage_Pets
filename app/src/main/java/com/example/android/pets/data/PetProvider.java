@@ -71,6 +71,7 @@ public class PetProvider extends ContentProvider {
             case URI_MATCHER_PET_ID:
                 // SELECT a specific ID
                 selection = PetContract.PetEntry._ID + "=?";
+                Log.e(LOG_TAG, String.valueOf(ContentUris.parseId(uri)));
                 selectionArgs = new String[] {String.valueOf(ContentUris.parseId(uri))};
                 queryCusror = db.query(PetContract.PetEntry.TABLE_NAME,
                         projections,
@@ -126,7 +127,7 @@ public class PetProvider extends ContentProvider {
     private Uri insertPet(@NonNull Uri uri, @Nullable ContentValues contentValues) {
         // Test the values before enter them in the db
         if (!isAllValid(contentValues)) {
-            Log.e(LOG_TAG, R.string.error_insert + " - " + uri);
+            Log.e(LOG_TAG, R.string.insert_error + " - " + uri);
             return null;
         }
 
@@ -139,7 +140,7 @@ public class PetProvider extends ContentProvider {
         long id = db.insert(PetContract.PetEntry.TABLE_NAME, null, contentValues);
 
         if (id == -1){
-            Log.e(LOG_TAG, R.string.error_insert + " - " + uri);
+            Log.e(LOG_TAG, R.string.insert_error + " - " + uri);
             return null;
         }
 
@@ -193,7 +194,7 @@ public class PetProvider extends ContentProvider {
 
         // Test the values before enter them in the db
         if (!isAllValid(contentValues)) {
-            Log.e(LOG_TAG, R.string.error_update + " - " + uri);
+            Log.e(LOG_TAG, R.string.update_error + " - " + uri);
             return 0;
         }
 
@@ -206,7 +207,7 @@ public class PetProvider extends ContentProvider {
         int rowsUpdated = db.update(PetContract.PetEntry.TABLE_NAME, contentValues, selection, selectionArgs);
 
         if (rowsUpdated <= 0){
-            Log.e(LOG_TAG, R.string.error_update + " - " + uri);
+            Log.e(LOG_TAG, R.string.update_error + " - " + uri);
         }
         else {
             // Notify all the loaders associated to this URI that the data changes

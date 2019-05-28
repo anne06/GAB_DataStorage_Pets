@@ -15,7 +15,13 @@
  */
 package com.example.android.pets;
 
+import android.app.LoaderManager;
+import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.CursorLoader;
+import android.content.Intent;
+import android.content.Loader;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
@@ -37,7 +43,11 @@ import com.example.android.pets.data.PetDbHelper;
 /**
  * Allows user to create a new pet or edit an existing one.
  */
-public class EditorActivity extends AppCompatActivity {
+public class EditorActivity
+        extends AppCompatActivity
+        implements LoaderManager.LoaderCallbacks<Cursor> {
+
+
     private static final String LOG_TAG = EditorActivity.class.getSimpleName();
 
     /**
@@ -70,6 +80,12 @@ public class EditorActivity extends AppCompatActivity {
 
     private PetDbHelper mDbHelper;
 
+    private boolean isEdit = false;
+
+    private static final int PET_LOADER = 3;
+
+    private Uri mCurrentPetUri;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,6 +100,30 @@ public class EditorActivity extends AppCompatActivity {
         setupSpinner();
 
         mDbHelper = new PetDbHelper(this);
+
+        // Indicate if we are in EDIT or INSERT mode
+        Intent intent = getIntent();
+        Bundle bd = intent.getExtras();
+
+        if(bd != null)
+        {
+            String getType = (String) bd.get("type");
+            if (getType.equalsIgnoreCase(CatalogActivity.EDITOR_EDIT_MODE)){
+                // EDITOR MODE
+                isEdit = true;
+                this.setTitle(R.string.editor_activity_title_edit_pet);
+                mCurrentPetUri = intent.getData();
+                getLoaderManager().initLoader(PET_LOADER, null, this);
+
+            } else {
+                // INSERT MODE
+                isEdit = false;
+                this.setTitle(R.string.editor_activity_title_new_pet);
+            }
+        } else {
+            Log.e(LOG_TAG, "Intent type not provided");
+            return;
+        }
     }
 
     /**
@@ -139,7 +179,7 @@ public class EditorActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             // Respond to a click on the "Save" menu option
             case R.id.action_save:
-                insertPet();
+                savePet();
 
                 // Don't forget it !!!
                 // Means that we return to the Catalog Activity
@@ -158,7 +198,7 @@ public class EditorActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void insertPet() {
+    private void savePet() {
 
         String petName = ((EditText) findViewById(R.id.edit_pet_name)).getText().toString();
         String petBreed = ((EditText) findViewById(R.id.edit_pet_breed)).getText().toString();
@@ -173,7 +213,7 @@ public class EditorActivity extends AppCompatActivity {
                 petWeight = Integer.parseInt(petWeightString);
             } catch (NumberFormatException nfe) {
                 Log.e(LOG_TAG, "Catch Pet weight");
-                Toast.makeText(this, R.string.error_insert, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.insert_error, Toast.LENGTH_SHORT).show();
                 return;
             }
         }
@@ -184,19 +224,98 @@ public class EditorActivity extends AppCompatActivity {
         values.put(PetEntry.COLUMN_PET_GENDER, mGender);
         values.put(PetEntry.COLUMN_PET_WEIGHT, petWeight);
 
-        // Use of a Content Values to insert data in the DB
-        // Creation of all key-values for a pet
-        Uri uriPetId = getContentResolver().insert(PetEntry.CONTENT_URI, values);
+        if (isEdit){
+            // We are in UPDATE mode
+            long petID = ContentUris.parseId(mCurrentPetUri);
 
-        if (uriPetId == null) {
-            Toast.makeText(this,
-                    getString(R.string.error_insert),
-                    Toast.LENGTH_SHORT).show();
+            int nbPetUpdated = getContentResolver().update(mCurrentPetUri, values, null, null);
+
+            if (nbPetUpdated == 1) {
+                Toast.makeText(this,
+                        getString(R.string.update_ok),
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this,
+                        getString(R.string.update_error),
+                        Toast.LENGTH_SHORT).show();
+            }
+
+
+
         } else {
-            Toast.makeText(this,
-                    getString(R.string.ID_pet_inserted),
-                    Toast.LENGTH_SHORT).show();
+            // We are in INSERT mode
+
+            // Use of a Content Values to insert data in the DB
+            // Creation of all key-values for a pet
+            Uri uriPetId = getContentResolver().insert(PetEntry.CONTENT_URI, values);
+
+            if (uriPetId == null) {
+                Toast.makeText(this,
+                        getString(R.string.insert_error),
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this,
+                        getString(R.string.ID_pet_inserted),
+                        Toast.LENGTH_SHORT).show();
+            }
         }
 
+    }
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+        // Define the projection
+        String[] projection = {
+                PetEntry._ID,
+                PetEntry.COLUMN_PET_NAME,
+                PetEntry.COLUMN_PET_BREED,
+                PetEntry.COLUMN_PET_GENDER,
+                PetEntry.COLUMN_PET_WEIGHT
+        };
+
+        // This loader will execute the ContentProvider's query method
+        // in a bacground thread
+        return new CursorLoader(this,
+                mCurrentPetUri,
+                projection,
+                null,
+                null,
+                null
+        );
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+        if (cursor.moveToFirst()) {
+            mNameEditText.setText(cursor.getString(cursor.getColumnIndexOrThrow(PetEntry.COLUMN_PET_NAME)));
+            mBreedEditText.setText(cursor.getString(cursor.getColumnIndexOrThrow(PetEntry.COLUMN_PET_BREED)));
+            mWeightEditText.setText(Integer.toString(cursor.getInt(cursor.getColumnIndexOrThrow(PetEntry.COLUMN_PET_WEIGHT))));
+
+            mGender = cursor.getInt(cursor.getColumnIndexOrThrow(PetEntry.COLUMN_PET_GENDER));
+            // Gender is a dropdown spinner, so map the constant value from the database
+            // into one of the dropdown options (0 is Unknown, 1 is Male, 2 is Female).
+            // Then call setSelection() so that option is displayed on screen as the current selection.
+ /*           switch (mGender) {
+                case PetEntry.GENDER_MALE:
+                    mGenderSpinner.setSelection(1);
+                    break;
+                case PetEntry.GENDER_FEMALE:
+                    mGenderSpinner.setSelection(2);
+                    break;
+                default:
+                    mGenderSpinner.setSelection(0);
+                    break;
+            }
+            */
+            mGenderSpinner.setSelection(mGender);
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        mNameEditText.setText("");
+        mBreedEditText.setText("");
+        mGenderSpinner.setSelection(PetEntry.GENDER_UNKNOWN);
+        mWeightEditText.setText("");
     }
 }

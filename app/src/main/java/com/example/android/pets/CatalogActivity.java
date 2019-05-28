@@ -26,9 +26,11 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -43,6 +45,11 @@ public class CatalogActivity
         extends AppCompatActivity
         implements LoaderManager.LoaderCallbacks<Cursor> {
 
+    public static final String EDITOR_EDIT_MODE = "Edit";
+    public static final String EDITOR_INSERT_MODE = "Insert";
+
+
+    private static final String LOG_TAG = CatalogActivity.class.getSimpleName();
     private static final int PET_LOADER = 1;
     private PetDbHelper mDbHelper;
     private PetCursorAdapter mPetCursorAdapter;
@@ -51,16 +58,6 @@ public class CatalogActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_catalog);
-
-        // Setup FAB to open EditorActivity
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(CatalogActivity.this, EditorActivity.class);
-                startActivity(intent);
-            }
-        });
 
         // To access our database, we instantiate our subclass of SQLiteOpenHelper
         // and pass the context, which is the current activity.
@@ -77,6 +74,34 @@ public class CatalogActivity
         mPetCursorAdapter = new PetCursorAdapter(this, null);
         petListView.setAdapter(mPetCursorAdapter);
 
+        // Add an onItemClick listener on the List View
+        petListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
+                Intent intent = new Intent(CatalogActivity.this, EditorActivity.class);
+
+                // Use a ContentResolver + ContentProvider + UriMatcher to insert a new pet
+                Uri queryId = ContentUris.withAppendedId(PetEntry.CONTENT_URI, id);
+                Log.e(LOG_TAG, queryId.toString());
+
+                intent.putExtra("type", EDITOR_EDIT_MODE);
+                intent.setData(queryId);
+                intent.putExtra("queryURI", queryId.toString());
+                startActivity(intent);
+            }
+        });
+
+        // Setup FAB to open EditorActivity
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(CatalogActivity.this, EditorActivity.class);
+                intent.putExtra("type", EDITOR_INSERT_MODE);
+
+                startActivity(intent);
+            }
+        });
 
         // Create and initialize the CURSOR LOADER
         // to execute the query in a background thread
@@ -111,10 +136,10 @@ public class CatalogActivity
 
     /**
      * InsertPet
-     *
+     * <p>
      * return: id or -1 (error)
      */
-    private long insertPet(){
+    private long insertPet() {
         // Use of a Content Values to insert data in the DB
         // Creation of all key-values for a pet
         ContentValues insertDummyValues = new ContentValues();
@@ -128,7 +153,7 @@ public class CatalogActivity
 
         if (newPetID == null) {
             Toast.makeText(this,
-                    getString(R.string.error_insert),
+                    getString(R.string.insert_error),
                     Toast.LENGTH_SHORT).show();
         } else {
             Toast.makeText(this,
@@ -140,9 +165,7 @@ public class CatalogActivity
     }
 
     /**
-     *
-     *  ADD A CURSOR LOADER
-     *
+     * ADD A CURSOR LOADER
      */
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
@@ -161,7 +184,7 @@ public class CatalogActivity
                 null,
                 null,
                 null
-                );
+        );
     }
 
     @Override

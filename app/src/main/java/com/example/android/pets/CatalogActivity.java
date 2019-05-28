@@ -15,10 +15,12 @@
  */
 package com.example.android.pets;
 
+import android.app.AlertDialog;
 import android.app.LoaderManager;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.CursorLoader;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
@@ -124,21 +126,21 @@ public class CatalogActivity
             // Respond to a click on the "Insert dummy data" menu option
             case R.id.action_insert_dummy_data:
                 insertPet();
-                //displayDatabaseInfo();
                 return true;
-            // Respond to a click on the "Delete all entries" menu option
+
+                // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
-                // Do nothing for now
+                showDeleteConfirmationDialog();
                 return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    /**
+    /***************************************
      * InsertPet
      * <p>
      * return: id or -1 (error)
-     */
+     ****************************************/
     private long insertPet() {
         // Use of a Content Values to insert data in the DB
         // Creation of all key-values for a pet
@@ -164,9 +166,65 @@ public class CatalogActivity
         return ContentUris.parseId(newPetID);
     }
 
-    /**
+    /********************************************
+     *
+     * DELETE a PET
+     *
+     *********************************************/
+    private void deleteAllPets() {
+
+
+        int nbPetDeleted = getContentResolver().delete(PetEntry.CONTENT_URI, null, null);
+        if (nbPetDeleted > 0) {
+            Toast.makeText(this,
+                    getString(R.string.catalog_delete_pets_successful),
+                    Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this,
+                    getString(R.string.catalog_delete_pet_failed),
+                    Toast.LENGTH_SHORT).show();
+        }
+
+
+    }
+
+    /*************************************************************************************
+     *
+     *  Dialog if the DELETE menu item is selected
+     *
+     **************************************************************************************/
+    private void showDeleteConfirmationDialog() {
+        // Create an AlertDialog.Builder and set the message, and click listeners
+        // for the postivie and negative buttons on the dialog.
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(R.string.catalog_delete_dialog_msg);
+        builder.setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User clicked the "Delete" button, so delete the pet.
+                deleteAllPets();
+            }
+        });
+        builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                // User clicked the "Cancel" button, so dismiss the dialog
+                // and continue editing the pet.
+                if (dialog != null) {
+                    dialog.dismiss();
+                }
+            }
+        });
+
+        // Create and show the AlertDialog
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+    }
+
+
+    /********************************
+     *
      * ADD A CURSOR LOADER
-     */
+     *
+     *********************************/
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
         // Define the projection

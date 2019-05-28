@@ -145,6 +145,11 @@ public class EditorActivity
                 // INSERT MODE
                 isEdit = false;
                 this.setTitle(R.string.editor_activity_title_new_pet);
+
+                // in INSERT mode, the pet does not already exist so it cannot be deleted
+                // Invalidate the options menu, so the "Delete" menu option can be hidden.
+                // (It doesn't make sense to delete a pet that hasn't been created yet.)
+                invalidateOptionsMenu();
             }
         } else {
             Log.e(LOG_TAG, "Intent type not provided");
@@ -155,6 +160,75 @@ public class EditorActivity
 
     }
 
+    /********************************************
+     * INSERT or UPDATE a PET
+     *********************************************/
+    private void savePet() {
+
+        String petName = ((EditText) findViewById(R.id.edit_pet_name)).getText().toString();
+        String petBreed = ((EditText) findViewById(R.id.edit_pet_breed)).getText().toString();
+        String petWeightString = ((EditText) findViewById(R.id.edit_pet_weight)).getText().toString();
+
+        int petWeight = 0;
+
+        if (petWeightString == null || petWeightString.trim().length() == 0) {
+            petWeight = 0;
+        } else {
+            try {
+                petWeight = Integer.parseInt(petWeightString);
+            } catch (NumberFormatException nfe) {
+                Log.e(LOG_TAG, "Catch Pet weight");
+                Toast.makeText(this, R.string.insert_error, Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
+        ContentValues values = new ContentValues();
+        values.put(PetEntry.COLUMN_PET_NAME, petName);
+        values.put(PetEntry.COLUMN_PET_BREED, petBreed);
+        values.put(PetEntry.COLUMN_PET_GENDER, mGender);
+        values.put(PetEntry.COLUMN_PET_WEIGHT, petWeight);
+
+        if (isEdit){
+            // We are in UPDATE mode
+            long petID = ContentUris.parseId(mCurrentPetUri);
+
+            int nbPetUpdated = getContentResolver().update(mCurrentPetUri, values, null, null);
+
+            if (nbPetUpdated == 1) {
+                Toast.makeText(this,
+                        getString(R.string.update_ok),
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this,
+                        getString(R.string.update_error),
+                        Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            // We are in INSERT mode
+
+            // Use of a Content Values to insert data in the DB
+            // Creation of all key-values for a pet
+            Uri uriPetId = getContentResolver().insert(PetEntry.CONTENT_URI, values);
+
+            if (uriPetId == null) {
+                Toast.makeText(this,
+                        getString(R.string.insert_error),
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this,
+                        getString(R.string.ID_pet_inserted),
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
+
+    }
+
+    /********************************************************
+     *
+     * Display a Dialog if we live without saving data
+     *
+     *********************************************************/
     private void showUnsavedChangesDialog(
             DialogInterface.OnClickListener discardButtonClickListener) {
 
@@ -201,9 +275,15 @@ public class EditorActivity
         showUnsavedChangesDialog(discardButtonClickListener);
     }
 
-    /**
+
+
+
+    /***************************************************************************************
+     *
+     * SPINNER
      * Setup the dropdown spinner that allows the user to select the gender of the pet.
-     */
+     *
+    ****************************************************************************************/
     private void setupSpinner() {
         // Create adapter for spinner. The list options are from the String array it will use
         // the spinner will use the default layout
@@ -238,6 +318,22 @@ public class EditorActivity
                 mGender = PetEntry.GENDER_UNKNOWN; // Unknown
             }
         });
+    }
+
+    /****************************************************
+     *
+     *  MENU - MENU ITEMS
+     *
+     *****************************************************/
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        // If this is a new pet, hide the "Delete" menu item.
+        if (!isEdit) {
+            MenuItem menuItem = menu.findItem(R.id.action_delete);
+            menuItem.setVisible(false);
+        }
+        return true;
     }
 
     @Override
@@ -294,69 +390,12 @@ public class EditorActivity
         return super.onOptionsItemSelected(item);
     }
 
-    private void savePet() {
 
-        String petName = ((EditText) findViewById(R.id.edit_pet_name)).getText().toString();
-        String petBreed = ((EditText) findViewById(R.id.edit_pet_breed)).getText().toString();
-        String petWeightString = ((EditText) findViewById(R.id.edit_pet_weight)).getText().toString();
-
-        int petWeight = 0;
-
-        if (petWeightString == null || petWeightString.trim().length() == 0) {
-            petWeight = 0;
-        } else {
-            try {
-                petWeight = Integer.parseInt(petWeightString);
-            } catch (NumberFormatException nfe) {
-                Log.e(LOG_TAG, "Catch Pet weight");
-                Toast.makeText(this, R.string.insert_error, Toast.LENGTH_SHORT).show();
-                return;
-            }
-        }
-
-        ContentValues values = new ContentValues();
-        values.put(PetEntry.COLUMN_PET_NAME, petName);
-        values.put(PetEntry.COLUMN_PET_BREED, petBreed);
-        values.put(PetEntry.COLUMN_PET_GENDER, mGender);
-        values.put(PetEntry.COLUMN_PET_WEIGHT, petWeight);
-
-        if (isEdit){
-            // We are in UPDATE mode
-            long petID = ContentUris.parseId(mCurrentPetUri);
-
-            int nbPetUpdated = getContentResolver().update(mCurrentPetUri, values, null, null);
-
-            if (nbPetUpdated == 1) {
-                Toast.makeText(this,
-                        getString(R.string.update_ok),
-                        Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this,
-                        getString(R.string.update_error),
-                        Toast.LENGTH_SHORT).show();
-            }
-
-
-
-        } else {
-            // We are in INSERT mode
-
-            // Use of a Content Values to insert data in the DB
-            // Creation of all key-values for a pet
-            Uri uriPetId = getContentResolver().insert(PetEntry.CONTENT_URI, values);
-
-            if (uriPetId == null) {
-                Toast.makeText(this,
-                        getString(R.string.insert_error),
-                        Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this,
-                        getString(R.string.ID_pet_inserted),
-                        Toast.LENGTH_SHORT).show();
-            }
-        }
-
-    }
+    /**************************************
+     *
+     * LOADER
+     *
+     **************************************/
 
     @Override
     public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
